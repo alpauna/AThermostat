@@ -13,6 +13,7 @@
 #include "MQTTHandler.h"
 #include "OtaUtils.h"
 #include <SimpleFTPServer.h>
+#include <DNSServer.h>
 
 #ifdef DEFAULT_AP_PASSWORD
 static const char* _DEFAULT_AP_PW = DEFAULT_AP_PASSWORD;
@@ -75,6 +76,7 @@ uint8_t getCpuLoadCore1() { return _cpuLoadCore1; }
 static uint32_t _wifiDisconnectCount = 0;
 bool _apModeActive = false;
 String _apPassword;
+DNSServer _dnsServer;
 
 // Boot watchdog — RTC memory survives software resets
 RTC_NOINIT_ATTR static uint32_t _rapidRebootCount;
@@ -248,6 +250,7 @@ void startAPMode() {
     WiFi.disconnect(true);
     WiFi.mode(WIFI_AP_STA);
     WiFi.softAP(apSSID.c_str(), _apPassword.c_str());
+    _dnsServer.start(53, "*", WiFi.softAPIP());
     _apModeActive = true;
   }
   Log.warn("WiFi", "AP MODE ACTIVE - SSID: %s Pass: %s IP: %s",
@@ -276,6 +279,7 @@ String startAPModeTest() {
 
 void stopAPMode() {
   if (!_apModeActive) return;
+  _dnsServer.stop();
   WiFi.softAPdisconnect(true);
   WiFi.mode(WIFI_STA);
   _apModeActive = false;
@@ -635,6 +639,7 @@ void loop() {
     Log.info("FTP", "FTP auto-disabled (timeout)");
   }
   if (ftpActive) ftpSrv.handleFTP();
+  if (_apModeActive) _dnsServer.processNextRequest();
 
   ts.execute();
 }
