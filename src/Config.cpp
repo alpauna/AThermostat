@@ -270,7 +270,10 @@ bool Config::loadConfig(const char* filename, ProjectInfo& proj) {
     _wifiPassword = wifi_password != nullptr ? decryptPassword(wifi_password != nullptr ? wifi_password : "") : "";
     proj.apFallbackSeconds = wifiObj["apFallbackSeconds"] | 600;
     const char* apPw = wifiObj["apPassword"];
-    proj.apPassword = (apPw != nullptr && strlen(apPw) > 0) ? decryptPassword(String(apPw)) : "";
+    if (apPw != nullptr && strlen(apPw) > 0) {
+        proj.apPassword = decryptPassword(String(apPw));
+    }
+    // else: keep the default from ProjectInfo initializer (DEFAULT_AP_PASSWORD)
     const char* ftpPw = wifiObj["ftpPassword"];
     proj.ftpPassword = (ftpPw != nullptr && strlen(ftpPw) > 0) ? decryptPassword(String(ftpPw)) : "";
     Serial.printf("Read WiFi SSID:%s apFallback:%us\n", wifi_ssid ? wifi_ssid : "", proj.apFallbackSeconds);
