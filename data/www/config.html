@@ -1,0 +1,171 @@
+<html><head><title>Config - AThermostat</title>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<link rel='stylesheet' href='/theme.css'>
+<script>document.documentElement.dataset.theme=localStorage.getItem('hp-theme')||'dark'</script>
+<style>
+body{font-family:Arial,sans-serif;margin:0;padding:0;background:var(--bg);}
+nav{background:var(--nav-bg);padding:10px 20px;display:flex;align-items:center;gap:18px;}
+nav a{color:#fff;text-decoration:none;font-size:14px;padding:6px 12px;border-radius:4px;}
+nav a:hover,nav a.active{background:#4CAF50;}
+nav .brand{font-weight:bold;font-size:16px;margin-right:auto;color:#fff;}
+.content{max-width:600px;margin:20px auto;padding:0 20px;}
+h1{color:var(--text);}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:15px;margin-bottom:15px;}
+.card h3{margin-top:0;color:#4CAF50;}
+label{display:block;margin:10px 0 3px;color:var(--text-secondary);font-size:14px;}
+input[type=text],input[type=number],input[type=password],select{width:100%;padding:8px;border:1px solid var(--input-border);border-radius:4px;box-sizing:border-box;background:var(--input-bg);color:var(--text);font-size:14px;}
+input[type=checkbox]{margin-right:6px;}
+.check-row{display:flex;align-items:center;margin:8px 0;color:var(--text-secondary);font-size:14px;}
+button{background:#4CAF50;color:#fff;padding:10px 24px;border:none;border-radius:4px;cursor:pointer;font-size:14px;margin-top:10px;}
+button:hover{background:#45a049;}
+#status{margin-top:15px;padding:10px;border-radius:4px;display:none;}
+.ok{background:#d4edda;color:#155724;display:block!important;}
+.err{background:#f8d7da;color:#721c24;display:block!important;}
+.footer{text-align:center;color:var(--text-muted);font-size:12px;margin-top:10px;}
+</style></head><body>
+<nav><span class='brand'>AThermostat</span>
+<button class='hamburger' onclick='this.nextElementSibling.classList.toggle("open")'><span></span><span></span><span></span></button>
+<div class='nav-links'>
+<a href='/dashboard'>Dashboard</a>
+<a href='/pins'>Pins</a>
+<a href='/config' class='active'>Config</a>
+<a href='/update'>Update</a>
+<a href='/log/view'>Log</a>
+<a href='/heap/view'>Heap</a>
+<a href='#' class='reboot' onclick="if(confirm('Reboot device?')){var x=new XMLHttpRequest();x.open('POST','/reboot');x.onload=function(){alert(x.status===200?'Rebooting...':'Failed')};x.send()};return false">Reboot</a>
+</div></nav>
+<div class='content'>
+<h1>Configuration</h1>
+
+<div class='card'>
+<h3>System</h3>
+<label>System Name</label><input type='text' id='system_name'>
+<label>MQTT Prefix</label><input type='text' id='mqtt_prefix'>
+</div>
+
+<div class='card'>
+<h3>Appearance</h3>
+<label>Theme</label>
+<select id='theme'><option value='light'>Light</option><option value='dark'>Dark</option></select>
+<label>Dashboard Poll Interval (sec)</label><input type='number' id='poll_interval' min='1' max='10'>
+</div>
+
+<div class='card'>
+<h3>Authentication</h3>
+<label>Admin Password (leave blank to keep current)</label><input type='password' id='admin_password'>
+<label>Session Timeout</label>
+<select id='session_timeout'>
+<option value='0'>Disabled (Basic Auth)</option>
+<option value='15'>15 minutes</option>
+<option value='30'>30 minutes</option>
+<option value='60'>1 hour</option>
+<option value='120'>2 hours</option>
+</select>
+</div>
+
+<div class='card'>
+<h3>WiFi</h3>
+<label>SSID</label><input type='text' id='wifi_ssid'>
+<label>Password (leave blank to keep current)</label><input type='password' id='wifi_password'>
+<label>AP Fallback (seconds)</label><input type='number' id='ap_fallback_sec' min='60' max='3600'>
+<label>AP Password (min 8 chars, leave blank to keep current)</label><input type='password' id='ap_password'>
+</div>
+
+<div class='card'>
+<h3>MQTT</h3>
+<label>Host</label><input type='text' id='mqtt_host'>
+<label>Port</label><input type='number' id='mqtt_port' min='1' max='65535'>
+<label>User</label><input type='text' id='mqtt_user'>
+<label>Password (leave blank to keep current)</label><input type='password' id='mqtt_password'>
+<label>HA Temperature Topic</label><input type='text' id='mqtt_temp_topic'>
+</div>
+
+<div class='card'>
+<h3>Timezone</h3>
+<label>POSIX TZ String</label><input type='text' id='timezone'>
+</div>
+
+<div class='card'>
+<h3>Thermostat Timing</h3>
+<label>Min On Time (ms)</label><input type='number' id='min_on_ms' min='0' max='600000'>
+<label>Min Off Time (ms)</label><input type='number' id='min_off_ms' min='0' max='600000'>
+<label>Max Run Time (ms)</label><input type='number' id='max_run_ms' min='60000' max='7200000'>
+<label>Escalation Delay (ms)</label><input type='number' id='escalation_ms' min='60000' max='3600000'>
+</div>
+
+<div class='card'>
+<h3>Temperature Deadbands</h3>
+<label>Heat Deadband (F)</label><input type='number' id='heat_deadband' step='0.1' min='0' max='5'>
+<label>Cool Deadband (F)</label><input type='number' id='cool_deadband' step='0.1' min='0' max='5'>
+<label>Heat Overrun (F)</label><input type='number' id='heat_overrun' step='0.1' min='0' max='5'>
+<label>Cool Overrun (F)</label><input type='number' id='cool_overrun' step='0.1' min='0' max='5'>
+</div>
+
+<div class='card'>
+<h3>Fan Idle Duty Cycle</h3>
+<div class='check-row'><input type='checkbox' id='fan_idle_enabled'><label for='fan_idle_enabled' style='display:inline;margin:0'>Enable fan idle cycling</label></div>
+<label>Wait (minutes)</label><input type='number' id='fan_idle_wait' min='1' max='60'>
+<label>Run (minutes)</label><input type='number' id='fan_idle_run' min='1' max='30'>
+</div>
+
+<button onclick='save()'>Save Configuration</button>
+<div id='status'></div>
+</div>
+<script>
+function load(){
+  fetch('/config/load').then(r=>r.json()).then(d=>{
+    document.getElementById('system_name').value=d.system_name||'';
+    document.getElementById('mqtt_prefix').value=d.mqtt_prefix||'';
+    document.getElementById('theme').value=d.theme||'dark';
+    document.getElementById('poll_interval').value=d.poll_interval||2;
+    document.getElementById('session_timeout').value=d.session_timeout||0;
+    document.getElementById('wifi_ssid').value=d.wifi_ssid||'';
+    document.getElementById('ap_fallback_sec').value=d.ap_fallback_sec||600;
+    document.getElementById('mqtt_host').value=d.mqtt_host||'';
+    document.getElementById('mqtt_port').value=d.mqtt_port||1883;
+    document.getElementById('mqtt_user').value=d.mqtt_user||'';
+    document.getElementById('mqtt_temp_topic').value=d.mqtt_temp_topic||'';
+    document.getElementById('timezone').value=d.timezone||'';
+    document.getElementById('min_on_ms').value=d.min_on_ms||180000;
+    document.getElementById('min_off_ms').value=d.min_off_ms||180000;
+    document.getElementById('max_run_ms').value=d.max_run_ms||1800000;
+    document.getElementById('escalation_ms').value=d.escalation_ms||600000;
+    document.getElementById('heat_deadband').value=d.heat_deadband||0.5;
+    document.getElementById('cool_deadband').value=d.cool_deadband||0.5;
+    document.getElementById('heat_overrun').value=d.heat_overrun||0.5;
+    document.getElementById('cool_overrun').value=d.cool_overrun||0.5;
+    document.getElementById('fan_idle_enabled').checked=d.fan_idle_enabled||false;
+    document.getElementById('fan_idle_wait').value=d.fan_idle_wait||15;
+    document.getElementById('fan_idle_run').value=d.fan_idle_run||5;
+  }).catch(e=>console.error(e));
+}
+function save(){
+  var body={};
+  var ids=['system_name','mqtt_prefix','theme','poll_interval','session_timeout',
+    'wifi_ssid','wifi_password','ap_fallback_sec','ap_password','mqtt_host','mqtt_port','mqtt_user',
+    'mqtt_password','mqtt_temp_topic','timezone','admin_password',
+    'min_on_ms','min_off_ms','max_run_ms','escalation_ms',
+    'heat_deadband','cool_deadband','heat_overrun','cool_overrun',
+    'fan_idle_wait','fan_idle_run'];
+  for(var i=0;i<ids.length;i++){
+    var el=document.getElementById(ids[i]);
+    if(!el)continue;
+    var v=el.value;
+    if(el.type==='number')v=parseFloat(v);
+    if(el.type==='password'&&v==='')continue;
+    body[ids[i]]=v;
+  }
+  body.fan_idle_enabled=document.getElementById('fan_idle_enabled').checked;
+  var s=document.getElementById('status');
+  fetch('/config/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(r=>r.json()).then(r=>{
+      if(r.error){s.className='err';s.textContent=r.error;}
+      else{s.className='ok';s.textContent='Saved'+(r.needsReboot?' (reboot required for some changes)':'')+'.';}
+    }).catch(e=>{s.className='err';s.textContent='Error: '+e;});
+}
+load();
+fetch('/theme').then(function(r){return r.json()}).then(function(d){var t=d.theme||'dark';document.documentElement.dataset.theme=t;localStorage.setItem('hp-theme',t);if(d.systemName){var b=document.querySelector('.brand');if(b)b.textContent=d.systemName;document.title=document.title.replace('AThermostat',d.systemName);}}).catch(function(){});
+</script>
+<div class="btt" id="btt" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">&#9650;</div>
+<script>window.addEventListener('scroll',function(){document.getElementById('btt').classList.toggle('show',window.scrollY>300)});</script>
+</body></html>

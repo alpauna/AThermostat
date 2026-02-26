@@ -1,0 +1,155 @@
+#include "OtaUtils.h"
+#include <LittleFS.h>
+#include <Update.h>
+#include <esp_ota_ops.h>
+#include <esp_partition.h>
+#include "Logger.h"
+
+static constexpr size_t OTA_BUF_SIZE = 4096;
+static constexpr size_t MIN_FIRMWARE_SIZE = 100 * 1024;  // 100KB sanity check
+
+bool backupFirmwareToFS(const char* path, const char* buildDate) {
+    const esp_partition_t* running = esp_ota_get_running_partition();
+    if (!running) {
+        Log.error("OTA", "Could not get running partition");
+        return false;
+    }
+
+    size_t sketchSize = ESP.getSketchSize();
+    if (sketchSize < MIN_FIRMWARE_SIZE) {
+        Log.error("OTA", "Sketch size too small: %u", sketchSize);
+        return false;
+    }
+
+    File backup = LittleFS.open(path, FILE_WRITE);
+    if (!backup) {
+        Log.error("OTA", "Failed to open %s for writing", path);
+        return false;
+    }
+
+    Log.info("OTA", "Backing up firmware (%u bytes) to %s", sketchSize, path);
+
+    uint8_t buf[OTA_BUF_SIZE];
+    for (size_t offset = 0; offset < sketchSize; offset += OTA_BUF_SIZE) {
+        size_t toRead = sketchSize - offset;
+        if (toRead > OTA_BUF_SIZE) toRead = OTA_BUF_SIZE;
+
+        esp_err_t err = esp_partition_read(running, offset, buf, toRead);
+        if (err != ESP_OK) {
+            Log.error("OTA", "Flash read failed at offset %u: %s", offset, esp_err_to_name(err));
+            backup.close();
+            LittleFS.remove(path);
+            return false;
+        }
+
+        if (backup.write(buf, toRead) != toRead) {
+            Log.error("OTA", "FS write failed at offset %u", offset);
+            backup.close();
+            LittleFS.remove(path);
+            return false;
+        }
+    }
+
+    backup.close();
+    Log.info("OTA", "Firmware backup complete (%u bytes)", sketchSize);
+
+    if (buildDate && buildDate[0]) {
+        String metaPath = String(path) + ".meta";
+        File meta = LittleFS.open(metaPath.c_str(), FILE_WRITE);
+        if (meta) {
+            meta.print(buildDate);
+            meta.close();
+            Log.info("OTA", "Saved backup build date: %s", buildDate);
+        }
+    }
+
+    return true;
+}
+
+bool revertFirmwareFromFS(const char* path) {
+    File backup = LittleFS.open(path, FILE_READ);
+    if (!backup) {
+        Log.error("OTA", "Failed to open %s for reading", path);
+        return false;
+    }
+
+    size_t fileSize = backup.size();
+    if (fileSize < MIN_FIRMWARE_SIZE) {
+        Log.error("OTA", "Backup file too small: %u bytes", fileSize);
+        backup.close();
+        return false;
+    }
+
+    Log.info("OTA", "Reverting firmware from %s (%u bytes)", path, fileSize);
+
+    if (!Update.begin(fileSize)) {
+        Log.error("OTA", "Update.begin failed for revert");
+        Update.printError(Serial);
+        backup.close();
+        return false;
+    }
+
+    uint8_t buf[OTA_BUF_SIZE];
+    size_t remaining = fileSize;
+    while (remaining > 0) {
+        size_t toRead = remaining > OTA_BUF_SIZE ? OTA_BUF_SIZE : remaining;
+        size_t bytesRead = backup.read(buf, toRead);
+        if (bytesRead == 0) {
+            Log.error("OTA", "FS read failed during revert");
+            Update.abort();
+            backup.close();
+            return false;
+        }
+        if (Update.write(buf, bytesRead) != bytesRead) {
+            Log.error("OTA", "Flash write failed during revert");
+            Update.printError(Serial);
+            Update.abort();
+            backup.close();
+            return false;
+        }
+        remaining -= bytesRead;
+    }
+
+    backup.close();
+
+    if (Update.end(true)) {
+        Log.info("OTA", "Firmware revert successful");
+        return true;
+    } else {
+        Log.error("OTA", "Firmware revert failed");
+        Update.printError(Serial);
+        return false;
+    }
+}
+
+bool applyFirmwareFromFS(const char* path, const char* buildDate) {
+    backupFirmwareToFS("/firmware.bak", buildDate);
+    bool ok = revertFirmwareFromFS(path);
+    if (ok) {
+        LittleFS.remove(path);
+        Log.info("OTA", "Removed %s after successful apply", path);
+    }
+    return ok;
+}
+
+bool firmwareBackupExists(const char* path) {
+    return LittleFS.exists(path);
+}
+
+size_t firmwareBackupSize(const char* path) {
+    File f = LittleFS.open(path, FILE_READ);
+    if (!f) return 0;
+    size_t s = f.size();
+    f.close();
+    return s;
+}
+
+String getBackupBuildDate(const char* path) {
+    String metaPath = String(path) + ".meta";
+    File meta = LittleFS.open(metaPath.c_str(), FILE_READ);
+    if (!meta) return "";
+    String date = meta.readString();
+    meta.close();
+    date.trim();
+    return date;
+}
