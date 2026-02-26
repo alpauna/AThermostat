@@ -77,6 +77,7 @@ static uint32_t _wifiDisconnectCount = 0;
 bool _apModeActive = false;
 String _apPassword;
 DNSServer _dnsServer;
+volatile bool _needStartHttps = false;
 
 // Boot watchdog — RTC memory survives software resets
 RTC_NOINIT_ATTR static uint32_t _rapidRebootCount;
@@ -256,10 +257,13 @@ void startAPMode() {
   Log.warn("WiFi", "AP MODE ACTIVE - SSID: %s Pass: %s IP: %s",
            apSSID.c_str(), _apPassword.c_str(), WiFi.softAPIP().toString().c_str());
 
-  tAPReconnect.setInterval(proj.apFallbackSeconds * (unsigned long)TASK_SECOND);
-  tAPReconnect.enableDelayed();
+  if (!tAPReconnect.isEnabled()) {
+    tAPReconnect.setInterval(30 * (unsigned long)TASK_SECOND);
+    tAPReconnect.enableDelayed();
+  }
 
-  if (_WIFI_SSID.length() > 0) {
+  if (_WIFI_SSID.length() > 0 && !WiFi.isConnected()) {
+    Log.info("WiFi", "Starting STA connection to '%s'", _WIFI_SSID.c_str());
     WiFi.begin(_WIFI_SSID.c_str(), _WIFI_PASSWORD.c_str());
   }
 }
@@ -293,8 +297,8 @@ void onAPReconnect() {
     return;
   }
   if (_WIFI_SSID.length() > 0) {
+    Log.info("WiFi", "AP mode STA reconnect attempt to '%s'", _WIFI_SSID.c_str());
     WiFi.begin(_WIFI_SSID.c_str(), _WIFI_PASSWORD.c_str());
-    Log.info("WiFi", "AP mode STA reconnect attempt");
   }
 }
 
@@ -402,10 +406,16 @@ void onWiFiEvent(WiFiEvent_t event) {
       if (_apModeActive) {
         stopAPMode();
       }
+      // Defer HTTPS start to main loop (can't do it from WiFi event context)
+      if (config.getCertLen() > 0 && !webHandler.isSecureRunning()) {
+        _needStartHttps = true;
+      }
       break;
     case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
       _wifiDisconnectCount++;
-      Log.warn("WiFi", "Disconnected (count=%u)", _wifiDisconnectCount);
+      if (_wifiDisconnectCount <= 3 || _wifiDisconnectCount % 10 == 0) {
+        Log.warn("WiFi", "Disconnected (count=%u)", _wifiDisconnectCount);
+      }
       mqttHandler.stopReconnect();
       if (!_apModeActive && _wifiDisconnectCount >= (proj.apFallbackSeconds / 10)) {
         startAPMode();
@@ -600,11 +610,9 @@ void setup() {
 
   webHandler.begin();
 
-  // HTTPS (if certs available)
-  if (config.loadCertificates("/cert.pem", "/key.pem")) {
-    webHandler.beginSecure(config.getCert(), config.getCertLen(),
-                           config.getKey(), config.getKeyLen());
-  }
+  // HTTPS — only start once WiFi STA is connected (not in AP mode)
+  // Certs are loaded; HTTPS will be started in onWiFiEvent when STA connects
+  config.loadCertificates("/cert.pem", "/key.pem");
 
   // MQTT
   mqttHandler.setThermostat(&thermostat);
@@ -640,6 +648,13 @@ void loop() {
   }
   if (ftpActive) ftpSrv.handleFTP();
   if (_apModeActive) _dnsServer.processNextRequest();
+
+  // Deferred HTTPS start (can't run from WiFi event callback)
+  if (_needStartHttps) {
+    _needStartHttps = false;
+    webHandler.beginSecure(config.getCert(), config.getCertLen(),
+                           config.getKey(), config.getKeyLen());
+  }
 
   ts.execute();
 }

@@ -95,7 +95,16 @@ void WebHandler::begin() {
         this->syncNtpTime();
     }, _ts, false);
 
+    // CORS headers for all responses (needed when captive portal DNS is active)
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
     _server.onNotFound([](AsyncWebServerRequest *request) {
+        if (request->method() == HTTP_OPTIONS) {
+            request->send(200);
+            return;
+        }
         request->send(404);
     });
 
@@ -283,7 +292,6 @@ void WebHandler::setupRoutes() {
 
     // --- Login API ---
     _server.on("/api/login", HTTP_POST, [](AsyncWebServerRequest *request) {
-        request->send(400);
     }, nullptr, [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
         if (index + len != total) return;
         JsonDocument doc;
@@ -307,7 +315,6 @@ void WebHandler::setupRoutes() {
 
     // --- Admin setup ---
     _server.on("/admin/setup", HTTP_POST, [](AsyncWebServerRequest *request) {
-        request->send(400);
     }, nullptr, [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
         if (index + len != total) return;
         JsonDocument doc;
@@ -383,7 +390,6 @@ void WebHandler::setupRoutes() {
 
     // --- Set mode ---
     _server.on("/api/mode", HTTP_POST, [](AsyncWebServerRequest *request) {
-        request->send(400);
     }, nullptr, [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
         if (!checkAuth(request)) return;
         if (index + len != total) return;
@@ -397,7 +403,6 @@ void WebHandler::setupRoutes() {
 
     // --- Set setpoints ---
     _server.on("/api/setpoint", HTTP_POST, [](AsyncWebServerRequest *request) {
-        request->send(400);
     }, nullptr, [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
         if (!checkAuth(request)) return;
         if (index + len != total) return;
@@ -410,7 +415,6 @@ void WebHandler::setupRoutes() {
 
     // --- Fan idle settings ---
     _server.on("/api/fan_idle", HTTP_POST, [](AsyncWebServerRequest *request) {
-        request->send(400);
     }, nullptr, [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
         if (!checkAuth(request)) return;
         if (index + len != total) return;
@@ -425,7 +429,6 @@ void WebHandler::setupRoutes() {
 
     // --- Force no HP ---
     _server.on("/api/force_no_hp", HTTP_POST, [](AsyncWebServerRequest *request) {
-        request->send(400);
     }, nullptr, [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
         if (!checkAuth(request)) return;
         if (index + len != total) return;
@@ -437,7 +440,6 @@ void WebHandler::setupRoutes() {
 
     // --- Force furnace ---
     _server.on("/api/force_furnace", HTTP_POST, [](AsyncWebServerRequest *request) {
-        request->send(400);
     }, nullptr, [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
         if (!checkAuth(request)) return;
         if (index + len != total) return;
@@ -526,8 +528,7 @@ void WebHandler::setupRoutes() {
     });
 
     // --- Config save ---
-    _server.on("/config/save", HTTP_POST, [](AsyncWebServerRequest *request) {
-        request->send(400);
+    _server.on("/api/config/save", HTTP_POST, [](AsyncWebServerRequest *request) {
     }, nullptr, [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
         if (!checkAuth(request)) return;
         if (index + len != total) return;
@@ -621,10 +622,11 @@ void WebHandler::setupRoutes() {
     });
 
     // --- Config load ---
-    _server.on("/config/load", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    _server.on("/api/config/load", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        Serial.printf("config/load from %s\n", request->client()->remoteIP().toString().c_str());
         if (!checkAuth(request)) return;
         ProjectInfo* p = _config->getProjectInfo();
-        if (!p) { request->send(500); return; }
+        if (!p) { Serial.println("config/load: no ProjectInfo!"); request->send(500); return; }
 
         JsonDocument doc;
         doc["wifi_ssid"] = _config->getWifiSSID();
@@ -665,6 +667,7 @@ void WebHandler::setupRoutes() {
 
         String response;
         serializeJson(doc, response);
+        Serial.printf("config/load: %u bytes, ssid='%s'\n", response.length(), _config->getWifiSSID().c_str());
         request->send(200, "application/json", response);
     });
 

@@ -113,7 +113,7 @@ button:hover{background:#45a049;}
 </div>
 <script>
 function load(){
-  fetch('/config/load').then(r=>r.json()).then(d=>{
+  fetch('/api/config/load').then(r=>r.json()).then(d=>{
     document.getElementById('system_name').value=d.system_name||'';
     document.getElementById('mqtt_prefix').value=d.mqtt_prefix||'';
     document.getElementById('theme').value=d.theme||'dark';
@@ -137,7 +137,7 @@ function load(){
     document.getElementById('fan_idle_enabled').checked=d.fan_idle_enabled||false;
     document.getElementById('fan_idle_wait').value=d.fan_idle_wait||15;
     document.getElementById('fan_idle_run').value=d.fan_idle_run||5;
-  }).catch(e=>console.error(e));
+  }).catch(e=>{console.error('Config load failed:',e);document.getElementById('status').className='err';document.getElementById('status').textContent='Failed to load config: '+e;});
 }
 function save(){
   var body={};
@@ -157,7 +157,7 @@ function save(){
   }
   body.fan_idle_enabled=document.getElementById('fan_idle_enabled').checked;
   var s=document.getElementById('status');
-  fetch('/config/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+  fetch('/api/config/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(r=>r.json()).then(r=>{
       if(r.error){s.className='err';s.textContent=r.error;}
       else{s.className='ok';s.textContent='Saved'+(r.needsReboot?' (reboot required for some changes)':'')+'.';}

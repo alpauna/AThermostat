@@ -276,7 +276,8 @@ bool Config::loadConfig(const char* filename, ProjectInfo& proj) {
     // else: keep the default from ProjectInfo initializer (DEFAULT_AP_PASSWORD)
     const char* ftpPw = wifiObj["ftpPassword"];
     proj.ftpPassword = (ftpPw != nullptr && strlen(ftpPw) > 0) ? decryptPassword(String(ftpPw)) : "";
-    Serial.printf("Read WiFi SSID:%s apFallback:%us\n", wifi_ssid ? wifi_ssid : "", proj.apFallbackSeconds);
+    Serial.printf("Read WiFi SSID:'%s' password:%s apFallback:%us\n",
+                  wifi_ssid ? wifi_ssid : "(null)", wifi_password ? "set" : "empty", proj.apFallbackSeconds);
 
     // MQTT
     JsonObject mqtt = doc["mqtt"];
@@ -488,13 +489,13 @@ bool Config::saveConfiguration(const char* filename, ProjectInfo& proj) {
 bool Config::updateConfig(const char* filename, ProjectInfo& proj) {
     if (!_fsInitialized) return false;
 
-    fs::File file = LittleFS.open(filename, FILE_READ);
-    if (!file) return false;
-
     JsonDocument doc;
-    DeserializationError error = deserializeJson(doc, file);
-    file.close();
-    if (error) return false;
+    fs::File file = LittleFS.open(filename, FILE_READ);
+    if (file) {
+        deserializeJson(doc, file);
+        file.close();
+    }
+    // If file doesn't exist or parse fails, doc is empty — we'll create it from scratch
 
     doc["project"] = proj.name;
     doc["description"] = proj.description;
@@ -585,9 +586,11 @@ bool Config::updateConfig(const char* filename, ProjectInfo& proj) {
     admin["password"] = encryptPassword(_adminPasswordHash);
 
     file = LittleFS.open(filename, FILE_WRITE);
-    if (!file) return false;
-    serializeJson(doc, file);
+    if (!file) { Serial.println("updateConfig: failed to open file for write"); return false; }
+    size_t written = serializeJson(doc, file);
     file.close();
+    Serial.printf("updateConfig: wrote %u bytes, SSID=%s, mqttHost=%s\n",
+                  written, _wifiSSID.c_str(), _mqttHost.toString().c_str());
     return true;
 }
 

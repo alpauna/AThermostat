@@ -104,10 +104,10 @@ if ($AdminPW) { $CurlBase += @("-u", "admin:$AdminPW") }
 # Fetch current config
 Write-Host "Fetching current config from $DeviceIP..."
 $TempFile = [IO.Path]::GetTempFileName()
-& curl @CurlBase "$BaseURL/config/load" -o $TempFile 2>$null
+& curl @CurlBase "$BaseURL/api/config/load" -o $TempFile 2>$null
 if (!(Test-Path $TempFile) -or (Get-Item $TempFile).Length -eq 0) {
     $BaseURL = "http://$DeviceIP"
-    & curl @CurlBase "$BaseURL/config/load" -o $TempFile 2>$null
+    & curl @CurlBase "$BaseURL/api/config/load" -o $TempFile 2>$null
 }
 if (!(Test-Path $TempFile) -or (Get-Item $TempFile).Length -eq 0) {
     Write-Error "Could not reach device at $DeviceIP"
@@ -172,7 +172,7 @@ $payload | ConvertTo-Json | Set-Content $jsonFile -Encoding UTF8
 
 Write-Host ""
 Write-Host "Saving configuration..."
-$resp = & curl @CurlBase -X POST "$BaseURL/config/save" -H "Content-Type: application/json" -d "@$jsonFile" 2>$null
+$resp = & curl @CurlBase -X POST "$BaseURL/api/config/save" -H "Content-Type: application/json" -d "@$jsonFile" 2>$null
 Remove-Item $jsonFile -ErrorAction SilentlyContinue
 
 Write-Host "Response: $resp"

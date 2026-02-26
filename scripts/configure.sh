@@ -135,10 +135,10 @@ fi
 
 # Fetch current config
 echo "Fetching current config from $DEVICE_IP..."
-CURRENT=$(curl $CURL_OPTS $AUTH_OPTS "$BASE_URL/config/load" 2>/dev/null)
+CURRENT=$(curl $CURL_OPTS $AUTH_OPTS "$BASE_URL/api/config/load" 2>/dev/null)
 if [ -z "$CURRENT" ]; then
     BASE_URL="http://$DEVICE_IP"
-    CURRENT=$(curl $CURL_OPTS $AUTH_OPTS "$BASE_URL/config/load" 2>/dev/null)
+    CURRENT=$(curl $CURL_OPTS $AUTH_OPTS "$BASE_URL/api/config/load" 2>/dev/null)
 fi
 if [ -z "$CURRENT" ]; then
     echo "Error: Could not reach device at $DEVICE_IP"
@@ -197,7 +197,7 @@ JSON+="}"
 echo
 echo "Saving configuration..."
 RESP=$(curl $CURL_OPTS $AUTH_OPTS \
-    -X POST "$BASE_URL/config/save" \
+    -X POST "$BASE_URL/api/config/save" \
     -H "Content-Type: application/json" \
     -d "$JSON")
 

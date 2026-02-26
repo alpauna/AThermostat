@@ -23,6 +23,7 @@ class WebHandler {
     WebHandler(uint16_t port, Scheduler* ts, Thermostat* thermostat);
     void begin();
     bool beginSecure(const uint8_t* cert, size_t certLen, const uint8_t* key, size_t keyLen);
+    bool isSecureRunning() const { return _httpsServer != nullptr; }
     void startNtpSync();
     void setTimezone(const String& tz);
     void setConfig(Config* config) { _config = config; }

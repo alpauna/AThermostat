@@ -28,12 +28,21 @@ void MQTTHandler::begin(const IPAddress& host, uint16_t port,
     _client.onPublish([this](uint16_t packetId) {
         this->onPublish(packetId);
     });
+    // Store credentials as member variables — AsyncMqttClient only stores
+    // const char* pointers, so the underlying memory must stay valid.
+    _user = user;
+    _password = password;
     _client.setServer(host, port);
-    _client.setCredentials(user.c_str(), password.c_str());
+    _client.setCredentials(_user.c_str(), _password.c_str());
+    Log.info("MQTT", "Config: host=%s port=%u user='%s'",
+             host.toString().c_str(), port, _user.c_str());
 
     _tReconnect = new Task(10 * TASK_SECOND, TASK_FOREVER, [this]() {
         if (_client.connected()) {
             _tReconnect->disable();
+            return;
+        }
+        if (!WiFi.isConnected()) {
             return;
         }
         Log.info("MQTT", "Connecting to MQTT...");

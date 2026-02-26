@@ -35,6 +35,8 @@ class MQTTHandler {
     HX710* _pressure2;
     String _topicPrefix = "thermostat";
     String _tempTopic = "homeassistant/sensor/average_home_temperature/state";
+    String _user;
+    String _password;
 
     void onConnect(bool sessionPresent);
     void onDisconnect(AsyncMqttClientDisconnectReason reason);
