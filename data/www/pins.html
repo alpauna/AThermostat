@@ -18,6 +18,8 @@ th{color:var(--text-secondary);font-weight:normal;}
 td{color:var(--text);}
 .on{color:#4CAF50;font-weight:bold;}
 .off{color:var(--text-muted);}
+.protected{color:#ff9800;}
+.strapping{color:#f44336;}
 .footer{text-align:center;color:var(--text-muted);font-size:12px;margin-top:10px;}
 </style></head><body>
 <nav><span class='brand'>AThermostat</span>
@@ -45,6 +47,32 @@ td{color:var(--text);}
 <table>
 <tr><th>Name</th><th>GPIO</th><th>State</th></tr>
 <tbody id='inTable'><tr><td colspan='3'>Loading...</td></tr></tbody>
+</table>
+</div>
+<div class='card'>
+<h3>Protected Pins (ESP32-S3)</h3>
+<table>
+<tr><th>GPIO</th><th>Function</th><th>Notes</th></tr>
+<tr><td>0</td><td class='strapping'>Strapping</td><td>Boot mode select — do not use</td></tr>
+<tr><td>3</td><td class='strapping'>Strapping</td><td>JTAG signal source select</td></tr>
+<tr><td>19</td><td class='protected'>USB</td><td>USB_D- (USB-JTAG) — used for HX710 #1 DOUT</td></tr>
+<tr><td>20</td><td class='protected'>USB</td><td>USB_D+ (USB-JTAG) — used for HX710 #1 CLK</td></tr>
+<tr><td>26</td><td class='protected'>SPI Flash</td><td>Connected to SPI flash — do not use</td></tr>
+<tr><td>27</td><td class='protected'>SPI Flash</td><td>Connected to SPI flash — do not use</td></tr>
+<tr><td>28</td><td class='protected'>SPI Flash</td><td>Connected to SPI flash — do not use</td></tr>
+<tr><td>29</td><td class='protected'>SPI Flash</td><td>Connected to SPI flash — do not use</td></tr>
+<tr><td>30</td><td class='protected'>SPI Flash</td><td>Connected to SPI flash — do not use</td></tr>
+<tr><td>31</td><td class='protected'>SPI Flash</td><td>Connected to SPI flash — do not use</td></tr>
+<tr><td>32</td><td class='protected'>SPI Flash</td><td>Connected to SPI flash — do not use</td></tr>
+<tr><td>33</td><td class='protected'>PSRAM</td><td>Octal PSRAM — do not use</td></tr>
+<tr><td>34</td><td class='protected'>PSRAM</td><td>Octal PSRAM — do not use</td></tr>
+<tr><td>35</td><td class='protected'>PSRAM</td><td>Octal PSRAM — do not use</td></tr>
+<tr><td>36</td><td class='protected'>PSRAM</td><td>Octal PSRAM — do not use</td></tr>
+<tr><td>37</td><td class='protected'>PSRAM</td><td>Octal PSRAM — do not use</td></tr>
+<tr><td>43</td><td class='protected'>UART</td><td>U0TXD — serial TX</td></tr>
+<tr><td>44</td><td class='protected'>UART</td><td>U0RXD — serial RX</td></tr>
+<tr><td>45</td><td class='strapping'>Strapping</td><td>VDD_SPI voltage — used for out_temp_ok input</td></tr>
+<tr><td>46</td><td class='strapping'>Strapping</td><td>Boot mode / ROM log output</td></tr>
 </table>
 </div>
 <div id='footer' class='footer'></div>
