@@ -1,4 +1,5 @@
 <html><head><title>Pins - AThermostat</title>
+<meta charset='UTF-8'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
 <link rel='stylesheet' href='/theme.css'>
 <script>document.documentElement.dataset.theme=localStorage.getItem('hp-theme')||'dark'</script>
@@ -51,7 +52,7 @@ td{color:var(--text);}
 </div>
 <div class='card'>
 <h3>eFuse-Changeable Pins</h3>
-<p style='color:var(--text-secondary);font-size:13px;margin-top:0'>Pins whose function can be changed by burning eFuses. <span class='strapping'>PERMANENT</span> — cannot be undone.</p>
+<p style='color:var(--text-secondary);font-size:13px;margin-top:0'>Pins whose function can be changed by burning eFuses. <span class='strapping'>PERMANENT</span> -cannot be undone.</p>
 <table>
 <tr><th>GPIO</th><th>Current Use</th><th>eFuse</th><th>Effect</th><th>Status</th></tr>
 <tbody id='efusePinTable'><tr><td colspan='5'>Loading...</td></tr></tbody>
@@ -70,27 +71,27 @@ td{color:var(--text);}
 <table>
 <tr><th>GPIO</th><th>Function</th><th>eFuse State</th><th>Notes</th></tr>
 <tbody id='protectedTable'>
-<tr><td>0</td><td class='strapping'>Strapping</td><td class='off'>—</td><td>Boot mode select — do not use</td></tr>
-<tr><td>3</td><td class='strapping'>Strapping</td><td id='prot_3' class='off'>—</td><td>JTAG signal source select</td></tr>
-<tr><td>19</td><td class='protected'>USB</td><td id='prot_19' class='off'>—</td><td>USB_D- (USB-JTAG) — used for HX710 #1 DOUT</td></tr>
-<tr><td>20</td><td class='protected'>USB</td><td id='prot_20' class='off'>—</td><td>USB_D+ (USB-JTAG) — used for HX710 #1 CLK</td></tr>
-<tr><td>26</td><td class='protected'>SPI Flash</td><td class='off'>—</td><td>Connected to SPI flash — do not use</td></tr>
-<tr><td>27</td><td class='protected'>SPI Flash</td><td class='off'>—</td><td>Connected to SPI flash — do not use</td></tr>
-<tr><td>28</td><td class='protected'>SPI Flash</td><td class='off'>—</td><td>Connected to SPI flash — do not use</td></tr>
-<tr><td>29</td><td class='protected'>SPI Flash</td><td class='off'>—</td><td>Connected to SPI flash — do not use</td></tr>
-<tr><td>30</td><td class='protected'>SPI Flash</td><td class='off'>—</td><td>Connected to SPI flash — do not use</td></tr>
-<tr><td>31</td><td class='protected'>SPI Flash</td><td class='off'>—</td><td>Connected to SPI flash — do not use</td></tr>
-<tr><td>32</td><td class='protected'>SPI Flash</td><td class='off'>—</td><td>Connected to SPI flash — do not use</td></tr>
-<tr><td>33</td><td class='protected'>PSRAM</td><td class='off'>—</td><td>Octal PSRAM — do not use</td></tr>
-<tr><td>34</td><td class='protected'>PSRAM</td><td class='off'>—</td><td>Octal PSRAM — do not use</td></tr>
-<tr><td>35</td><td class='protected'>PSRAM</td><td class='off'>—</td><td>Octal PSRAM — do not use</td></tr>
-<tr><td>36</td><td class='protected'>PSRAM</td><td class='off'>—</td><td>Octal PSRAM — do not use</td></tr>
-<tr><td>37</td><td class='protected'>PSRAM</td><td class='off'>—</td><td>Octal PSRAM — do not use</td></tr>
-<tr><td>39-42</td><td class='protected'>JTAG</td><td id='prot_39' class='off'>—</td><td>JTAG pads — can be freed via DIS_PAD_JTAG</td></tr>
-<tr><td>43</td><td class='protected'>UART</td><td class='off'>—</td><td>U0TXD — serial TX</td></tr>
-<tr><td>44</td><td class='protected'>UART</td><td class='off'>—</td><td>U0RXD — serial RX</td></tr>
-<tr><td>45</td><td class='strapping'>Strapping</td><td id='prot_45' class='off'>—</td><td>VDD_SPI voltage — used for out_temp_ok input</td></tr>
-<tr><td>46</td><td class='strapping'>Strapping</td><td class='off'>—</td><td>Boot mode / ROM log output</td></tr>
+<tr><td>0</td><td class='strapping'>Strapping</td><td class='off'>-</td><td>Boot mode select -do not use</td></tr>
+<tr><td>3</td><td class='strapping'>Strapping</td><td id='prot_3' class='off'>-</td><td>JTAG signal source select</td></tr>
+<tr><td>19</td><td class='protected'>USB</td><td id='prot_19' class='off'>-</td><td>USB_D- (USB-JTAG) -used for HX710 #1 DOUT</td></tr>
+<tr><td>20</td><td class='protected'>USB</td><td id='prot_20' class='off'>-</td><td>USB_D+ (USB-JTAG) -used for HX710 #1 CLK</td></tr>
+<tr><td>26</td><td class='protected'>SPI Flash</td><td class='off'>-</td><td>Connected to SPI flash -do not use</td></tr>
+<tr><td>27</td><td class='protected'>SPI Flash</td><td class='off'>-</td><td>Connected to SPI flash -do not use</td></tr>
+<tr><td>28</td><td class='protected'>SPI Flash</td><td class='off'>-</td><td>Connected to SPI flash -do not use</td></tr>
+<tr><td>29</td><td class='protected'>SPI Flash</td><td class='off'>-</td><td>Connected to SPI flash -do not use</td></tr>
+<tr><td>30</td><td class='protected'>SPI Flash</td><td class='off'>-</td><td>Connected to SPI flash -do not use</td></tr>
+<tr><td>31</td><td class='protected'>SPI Flash</td><td class='off'>-</td><td>Connected to SPI flash -do not use</td></tr>
+<tr><td>32</td><td class='protected'>SPI Flash</td><td class='off'>-</td><td>Connected to SPI flash -do not use</td></tr>
+<tr><td>33</td><td class='protected'>PSRAM</td><td class='off'>-</td><td>Octal PSRAM -do not use</td></tr>
+<tr><td>34</td><td class='protected'>PSRAM</td><td class='off'>-</td><td>Octal PSRAM -do not use</td></tr>
+<tr><td>35</td><td class='protected'>PSRAM</td><td class='off'>-</td><td>Octal PSRAM -do not use</td></tr>
+<tr><td>36</td><td class='protected'>PSRAM</td><td class='off'>-</td><td>Octal PSRAM -do not use</td></tr>
+<tr><td>37</td><td class='protected'>PSRAM</td><td class='off'>-</td><td>Octal PSRAM -do not use</td></tr>
+<tr><td>39-42</td><td class='protected'>JTAG</td><td id='prot_39' class='off'>-</td><td>JTAG pads -can be freed via DIS_PAD_JTAG</td></tr>
+<tr><td>43</td><td class='protected'>UART</td><td class='off'>-</td><td>U0TXD -serial TX</td></tr>
+<tr><td>44</td><td class='protected'>UART</td><td class='off'>-</td><td>U0RXD -serial RX</td></tr>
+<tr><td>45</td><td class='strapping'>Strapping</td><td id='prot_45' class='off'>-</td><td>VDD_SPI voltage -used for out_temp_ok input</td></tr>
+<tr><td>46</td><td class='strapping'>Strapping</td><td class='off'>-</td><td>Boot mode / ROM log output</td></tr>
 </tbody>
 </table>
 </div>
