@@ -68,27 +68,30 @@ td{color:var(--text);}
 <div class='card'>
 <h3>Protected Pins (ESP32-S3)</h3>
 <table>
-<tr><th>GPIO</th><th>Function</th><th>Notes</th></tr>
-<tr><td>0</td><td class='strapping'>Strapping</td><td>Boot mode select — do not use</td></tr>
-<tr><td>3</td><td class='strapping'>Strapping</td><td>JTAG signal source select</td></tr>
-<tr><td>19</td><td class='protected'>USB</td><td>USB_D- (USB-JTAG) — used for HX710 #1 DOUT</td></tr>
-<tr><td>20</td><td class='protected'>USB</td><td>USB_D+ (USB-JTAG) — used for HX710 #1 CLK</td></tr>
-<tr><td>26</td><td class='protected'>SPI Flash</td><td>Connected to SPI flash — do not use</td></tr>
-<tr><td>27</td><td class='protected'>SPI Flash</td><td>Connected to SPI flash — do not use</td></tr>
-<tr><td>28</td><td class='protected'>SPI Flash</td><td>Connected to SPI flash — do not use</td></tr>
-<tr><td>29</td><td class='protected'>SPI Flash</td><td>Connected to SPI flash — do not use</td></tr>
-<tr><td>30</td><td class='protected'>SPI Flash</td><td>Connected to SPI flash — do not use</td></tr>
-<tr><td>31</td><td class='protected'>SPI Flash</td><td>Connected to SPI flash — do not use</td></tr>
-<tr><td>32</td><td class='protected'>SPI Flash</td><td>Connected to SPI flash — do not use</td></tr>
-<tr><td>33</td><td class='protected'>PSRAM</td><td>Octal PSRAM — do not use</td></tr>
-<tr><td>34</td><td class='protected'>PSRAM</td><td>Octal PSRAM — do not use</td></tr>
-<tr><td>35</td><td class='protected'>PSRAM</td><td>Octal PSRAM — do not use</td></tr>
-<tr><td>36</td><td class='protected'>PSRAM</td><td>Octal PSRAM — do not use</td></tr>
-<tr><td>37</td><td class='protected'>PSRAM</td><td>Octal PSRAM — do not use</td></tr>
-<tr><td>43</td><td class='protected'>UART</td><td>U0TXD — serial TX</td></tr>
-<tr><td>44</td><td class='protected'>UART</td><td>U0RXD — serial RX</td></tr>
-<tr><td>45</td><td class='strapping'>Strapping</td><td>VDD_SPI voltage — used for out_temp_ok input</td></tr>
-<tr><td>46</td><td class='strapping'>Strapping</td><td>Boot mode / ROM log output</td></tr>
+<tr><th>GPIO</th><th>Function</th><th>eFuse State</th><th>Notes</th></tr>
+<tbody id='protectedTable'>
+<tr><td>0</td><td class='strapping'>Strapping</td><td class='off'>—</td><td>Boot mode select — do not use</td></tr>
+<tr><td>3</td><td class='strapping'>Strapping</td><td id='prot_3' class='off'>—</td><td>JTAG signal source select</td></tr>
+<tr><td>19</td><td class='protected'>USB</td><td id='prot_19' class='off'>—</td><td>USB_D- (USB-JTAG) — used for HX710 #1 DOUT</td></tr>
+<tr><td>20</td><td class='protected'>USB</td><td id='prot_20' class='off'>—</td><td>USB_D+ (USB-JTAG) — used for HX710 #1 CLK</td></tr>
+<tr><td>26</td><td class='protected'>SPI Flash</td><td class='off'>—</td><td>Connected to SPI flash — do not use</td></tr>
+<tr><td>27</td><td class='protected'>SPI Flash</td><td class='off'>—</td><td>Connected to SPI flash — do not use</td></tr>
+<tr><td>28</td><td class='protected'>SPI Flash</td><td class='off'>—</td><td>Connected to SPI flash — do not use</td></tr>
+<tr><td>29</td><td class='protected'>SPI Flash</td><td class='off'>—</td><td>Connected to SPI flash — do not use</td></tr>
+<tr><td>30</td><td class='protected'>SPI Flash</td><td class='off'>—</td><td>Connected to SPI flash — do not use</td></tr>
+<tr><td>31</td><td class='protected'>SPI Flash</td><td class='off'>—</td><td>Connected to SPI flash — do not use</td></tr>
+<tr><td>32</td><td class='protected'>SPI Flash</td><td class='off'>—</td><td>Connected to SPI flash — do not use</td></tr>
+<tr><td>33</td><td class='protected'>PSRAM</td><td class='off'>—</td><td>Octal PSRAM — do not use</td></tr>
+<tr><td>34</td><td class='protected'>PSRAM</td><td class='off'>—</td><td>Octal PSRAM — do not use</td></tr>
+<tr><td>35</td><td class='protected'>PSRAM</td><td class='off'>—</td><td>Octal PSRAM — do not use</td></tr>
+<tr><td>36</td><td class='protected'>PSRAM</td><td class='off'>—</td><td>Octal PSRAM — do not use</td></tr>
+<tr><td>37</td><td class='protected'>PSRAM</td><td class='off'>—</td><td>Octal PSRAM — do not use</td></tr>
+<tr><td>39-42</td><td class='protected'>JTAG</td><td id='prot_39' class='off'>—</td><td>JTAG pads — can be freed via DIS_PAD_JTAG</td></tr>
+<tr><td>43</td><td class='protected'>UART</td><td class='off'>—</td><td>U0TXD — serial TX</td></tr>
+<tr><td>44</td><td class='protected'>UART</td><td class='off'>—</td><td>U0RXD — serial RX</td></tr>
+<tr><td>45</td><td class='strapping'>Strapping</td><td id='prot_45' class='off'>—</td><td>VDD_SPI voltage — used for out_temp_ok input</td></tr>
+<tr><td>46</td><td class='strapping'>Strapping</td><td class='off'>—</td><td>Boot mode / ROM log output</td></tr>
+</tbody>
 </table>
 </div>
 <div id='footer' class='footer'></div>
@@ -176,6 +179,23 @@ function loadEfuse(){
           sh+="<tr><td style='font-family:monospace;font-size:12px'>"+r.name+"</td><td class='"+(isSet?'strapping':'off')+"'>"+(typeof v==='boolean'?(v?'BURNED':'NOT SET'):v)+"</td><td>"+r.desc+"</td></tr>";
         }
         document.getElementById('efuseTable').innerHTML=sh;
+        // Update eFuse State column in Protected Pins table
+        var p3=document.getElementById('prot_3');
+        if(p3){if(e.STRAP_JTAG_SEL){p3.className='strapping';p3.textContent='JTAG SEL ACTIVE';}else{p3.className='off';p3.textContent='Default';}}
+        var p19=document.getElementById('prot_19');
+        var p20=document.getElementById('prot_20');
+        if(p19&&p20){
+          var usbFreed=e.DIS_USB_JTAG&&e.DIS_USB_SERIAL_JTAG;
+          if(usbFreed){p19.className='on';p19.textContent='FREED (JTAG off)';p20.className='on';p20.textContent='FREED (JTAG off)';}
+          else if(e.DIS_USB_JTAG){p19.className='protected';p19.textContent='USB-JTAG off';p20.className='protected';p20.textContent='USB-JTAG off';}
+          else if(e.DIS_USB_SERIAL_JTAG){p19.className='protected';p19.textContent='Serial JTAG off';p20.className='protected';p20.textContent='Serial JTAG off';}
+          else{p19.className='off';p19.textContent='Default';p20.className='off';p20.textContent='Default';}
+          if(e.USB_EXCHG_PINS){p19.textContent+=' (swapped)';p20.textContent+=' (swapped)';}
+        }
+        var p39=document.getElementById('prot_39');
+        if(p39){if(e.DIS_PAD_JTAG){p39.className='on';p39.textContent='FREED (JTAG off)';}else if(e.SOFT_DIS_JTAG){p39.className='protected';p39.textContent='Soft disabled';}else{p39.className='off';p39.textContent='Default';}}
+        var p45=document.getElementById('prot_45');
+        if(p45){if(e.VDD_SPI_FORCE){p45.className='on';p45.textContent='FREED (VDD forced)';}else{p45.className='off';p45.textContent='Default';}}
       }catch(ex){}
     }
   };
