@@ -52,7 +52,7 @@ td{color:var(--text);}
 <script>
 function load(){
   var xhr=new XMLHttpRequest();
-  xhr.open('GET','/pins/data',true);
+  xhr.open('GET','/api/pins',true);
   xhr.onload=function(){
     if(xhr.status===200){
       try{

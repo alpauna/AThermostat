@@ -496,7 +496,7 @@ void WebHandler::setupRoutes() {
     });
 
     // --- Pins API ---
-    _server.on("/pins/data", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    _server.on("/api/pins", HTTP_GET, [this](AsyncWebServerRequest *request) {
         if (!checkAuth(request)) return;
         JsonDocument doc;
 

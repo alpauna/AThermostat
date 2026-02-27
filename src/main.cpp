@@ -623,6 +623,13 @@ void setup() {
                     config.getMqttUser(), config.getMqttPassword());
   Log.setMqttClient(mqttHandler.getClient(), (proj.mqttPrefix + "/log").c_str());
 
+  // Start FTP at boot (always on)
+  _ftpActivePassword = proj.ftpPassword.length() > 0 ? proj.ftpPassword : "admin";
+  ftpSrv.begin("admin", _ftpActivePassword.c_str());
+  ftpActive = true;
+  ftpStopTime = 0;  // no timeout — always on
+  Log.info("FTP", "FTP server started (always on)");
+
   // Enable periodic tasks
   _tGetInputs.enable();
   tSaveState.enable();
