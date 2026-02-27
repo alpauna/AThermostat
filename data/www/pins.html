@@ -212,7 +212,7 @@ function loadEfuse(){
         var p39=document.getElementById('prot_39');
         if(p39){if(e.DIS_PAD_JTAG){p39.className='on';p39.textContent='FREED (JTAG off)';}else if(e.SOFT_DIS_JTAG){p39.className='protected';p39.textContent='Soft disabled';}else{p39.className='off';p39.textContent='Default';}}
         var p45=document.getElementById('prot_45');
-        if(p45){if(e.VDD_SPI_FORCE){p45.className='on';p45.textContent='FREED (VDD forced)';}else{p45.className='off';p45.textContent='Default';}}
+        if(p45){if(e.VDD_SPI_FORCE){p45.className='on';p45.textContent='FREED (VDD '+(e.VDD_SPI_TIEH?'3.3V':'1.8V')+')';}else{p45.className='off';p45.textContent='Default';}}
       }catch(ex){}
     }
   };
