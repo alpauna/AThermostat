@@ -5,6 +5,8 @@
 #include "OtaUtils.h"
 #include "HX710.h"
 #include "mbedtls/base64.h"
+#include "esp_efuse.h"
+#include "esp_efuse_table.h"
 
 extern const char compile_date[];
 extern uint8_t getCpuLoadCore0();
@@ -521,6 +523,41 @@ void WebHandler::setupRoutes() {
             InputPin* p = _thermostat->getInput((InputIdx)i);
             o["active"] = p ? p->isActive() : false;
         }
+
+        String response;
+        serializeJson(doc, response);
+        request->send(200, "application/json", response);
+    });
+
+    // --- eFuse API ---
+    _server.on("/api/efuse", HTTP_GET, [](AsyncWebServerRequest *request) {
+        JsonDocument doc;
+
+        doc["DIS_USB_JTAG"] = esp_efuse_read_field_bit(ESP_EFUSE_DIS_USB_JTAG);
+        doc["DIS_USB_SERIAL_JTAG"] = esp_efuse_read_field_bit(ESP_EFUSE_DIS_USB_SERIAL_JTAG);
+        doc["DIS_PAD_JTAG"] = esp_efuse_read_field_bit(ESP_EFUSE_HARD_DIS_JTAG);
+        doc["SOFT_DIS_JTAG"] = esp_efuse_read_field_bit(ESP_EFUSE_SOFT_DIS_JTAG);
+        doc["USB_EXCHG_PINS"] = esp_efuse_read_field_bit(ESP_EFUSE_USB_EXCHG_PINS);
+        doc["USB_EXT_PHY_ENABLE"] = esp_efuse_read_field_bit(ESP_EFUSE_USB_EXT_PHY_ENABLE);
+        doc["USB_PHY_SEL"] = esp_efuse_read_field_bit(ESP_EFUSE_USB_PHY_SEL);
+        doc["STRAP_JTAG_SEL"] = esp_efuse_read_field_bit(ESP_EFUSE_STRAP_JTAG_SEL);
+        doc["VDD_SPI_XPD"] = esp_efuse_read_field_bit(ESP_EFUSE_VDD_SPI_XPD);
+        doc["VDD_SPI_TIEH"] = esp_efuse_read_field_bit(ESP_EFUSE_VDD_SPI_TIEH);
+        doc["VDD_SPI_FORCE"] = esp_efuse_read_field_bit(ESP_EFUSE_VDD_SPI_FORCE);
+        doc["DIS_DOWNLOAD_MODE"] = esp_efuse_read_field_bit(ESP_EFUSE_DIS_DOWNLOAD_MODE);
+        doc["DIS_USB"] = esp_efuse_read_field_bit(ESP_EFUSE_DIS_USB);
+        doc["SECURE_BOOT_EN"] = esp_efuse_read_field_bit(ESP_EFUSE_SECURE_BOOT_EN);
+        doc["DIS_DIRECT_BOOT"] = esp_efuse_read_field_bit(ESP_EFUSE_DIS_DIRECT_BOOT);
+
+        uint8_t spi_crypt_cnt = 0;
+        esp_efuse_read_field_blob(ESP_EFUSE_SPI_BOOT_CRYPT_CNT, &spi_crypt_cnt, 3);
+        doc["SPI_BOOT_CRYPT_CNT"] = spi_crypt_cnt;
+
+        uint8_t uart_print = 0;
+        esp_efuse_read_field_blob(ESP_EFUSE_UART_PRINT_CONTROL, &uart_print, 2);
+        doc["UART_PRINT_CONTROL"] = uart_print;
+
+        doc["PIN_POWER_SELECTION"] = esp_efuse_read_field_bit(ESP_EFUSE_PIN_POWER_SELECTION);
 
         String response;
         serializeJson(doc, response);
