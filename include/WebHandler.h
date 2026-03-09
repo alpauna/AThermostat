@@ -4,7 +4,6 @@
 #include <Arduino.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncTCP.h>
-#include <Update.h>
 #include <LittleFS.h>
 #include <WiFi.h>
 #include <time.h>
@@ -84,6 +83,8 @@ class WebHandler {
 
     // OTA upload state
     bool _otaUploadOk = false;
+    bool _otaApplyPending = false;
+    File _otaFile;
 
     // WiFi test state
     String _wifiTestState = "idle";

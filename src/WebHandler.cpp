@@ -383,6 +383,7 @@ void WebHandler::setupRoutes() {
         doc["uptime"] = millis() / 1000;
         doc["wifi_ip"] = getWiFiIP();
         doc["build"] = compile_date;
+        doc["cpu_temp_f"] = serialized(String(temperatureRead() * 9.0 / 5.0 + 32.0, 1));
         doc["safe_mode"] = _safeMode ? *_safeMode : false;
 
         String response;
@@ -725,39 +726,49 @@ void WebHandler::setupRoutes() {
     // --- Firmware update ---
     _server.on("/update", HTTP_POST, [this](AsyncWebServerRequest *request) {
         if (!checkAuth(request)) return;
-        String msg = _otaUploadOk ? "{\"ok\":true}" : "{\"error\":\"Upload failed\"}";
-        AsyncWebServerResponse *response = request->beginResponse(_otaUploadOk ? 200 : 500, "application/json", msg);
-        request->send(response);
-        if (_otaUploadOk) {
-            _shouldReboot = true;
-            _tDelayedReboot = new Task(1000, TASK_ONCE, []() { ESP.restart(); }, _ts, true);
+        if (!_otaUploadOk) {
+            request->send(500, "application/json", "{\"error\":\"Upload failed\"}");
+            return;
         }
+        // Apply firmware from temp file on the main loop to avoid thread contention
+        _otaApplyPending = true;
+        new Task(100, TASK_ONCE, [this]() {
+            if (applyFirmwareFromFS("/firmware.new", compile_date)) {
+                Log.info("OTA", "Firmware applied, rebooting...");
+                _shouldReboot = true;
+                _tDelayedReboot = new Task(1000, TASK_ONCE, []() { ESP.restart(); }, _ts, true);
+            } else {
+                Log.error("OTA", "Failed to apply firmware from /firmware.new");
+                _otaApplyPending = false;
+            }
+        }, _ts, true);
+        request->send(200, "application/json", "{\"ok\":true}");
     }, [this](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
         if (!checkAuth(request)) return;
         if (index == 0) {
-            Log.info("OTA", "Upload start: %s", filename.c_str());
-            backupFirmwareToFS("/firmware.bak", compile_date);
-            if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
-                Log.error("OTA", "Update.begin failed");
-                Update.printError(Serial);
+            Log.info("OTA", "Upload start: %s (saving to /firmware.new)", filename.c_str());
+            _otaFile = LittleFS.open("/firmware.new", FILE_WRITE);
+            if (!_otaFile) {
+                Log.error("OTA", "Failed to open /firmware.new for writing");
                 _otaUploadOk = false;
                 return;
             }
             _otaUploadOk = true;
         }
         if (_otaUploadOk && len > 0) {
-            if (Update.write(data, len) != len) {
-                Log.error("OTA", "Update.write failed");
-                Update.printError(Serial);
+            if (_otaFile.write(data, len) != len) {
+                Log.error("OTA", "LittleFS write failed at offset %u", index);
                 _otaUploadOk = false;
+                _otaFile.close();
             }
         }
         if (final) {
-            if (_otaUploadOk && Update.end(true)) {
-                Log.info("OTA", "Upload complete: %u bytes", index + len);
+            _otaFile.close();
+            if (_otaUploadOk) {
+                Log.info("OTA", "Upload saved to /firmware.new: %u bytes", index + len);
             } else {
-                Log.error("OTA", "Upload finalize failed");
-                _otaUploadOk = false;
+                Log.error("OTA", "Upload failed, removing /firmware.new");
+                LittleFS.remove("/firmware.new");
             }
         }
     });

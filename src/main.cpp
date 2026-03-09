@@ -12,6 +12,7 @@
 #include "WebHandler.h"
 #include "MQTTHandler.h"
 #include "OtaUtils.h"
+#include "CANBus.h"
 #include <SimpleFTPServer.h>
 #include <DNSServer.h>
 
@@ -113,6 +114,10 @@ static const uint8_t PIN_HX710_2_CLK   = GPIO_NUM_11;
 static const uint8_t PIN_SDA           = GPIO_NUM_8;
 static const uint8_t PIN_SCL           = GPIO_NUM_9;
 
+// CAN bus (TWAI)
+static const gpio_num_t PIN_CAN_TX     = GPIO_NUM_13;
+static const gpio_num_t PIN_CAN_RX     = GPIO_NUM_14;
+
 // ProjectInfo with defaults
 ProjectInfo proj = {
   "AThermostat",         // name
@@ -156,10 +161,11 @@ ProjectInfo proj = {
   false                  // forceSafeMode
 };
 
-// Thermostat, WebHandler, MQTTHandler
+// Thermostat, WebHandler, MQTTHandler, CANBus
 Thermostat thermostat(&ts);
 WebHandler webHandler(80, &ts, &thermostat);
 MQTTHandler mqttHandler(&ts);
+CANBus canBus(&ts, PIN_CAN_TX, PIN_CAN_RX);
 
 // HX710 pressure sensors
 HX710 hx710_1(PIN_HX710_1_DOUT, PIN_HX710_1_CLK);
@@ -377,18 +383,25 @@ void onPublishMqttState() {
   mqttHandler.publishState();
 }
 
+static uint8_t _cpuLoadWarmup = 5; // Skip first 5s for idle hooks to stabilize
+
 void onCalcCpuLoad() {
-  // EMA: alpha=0.3 for smooth load % (100 - idle%)
-  uint32_t idle0 = _idleUsCore0;
-  uint32_t idle1 = _idleUsCore1;
-  _idleUsCore0 = 0;
-  _idleUsCore1 = 0;
+  // Atomically read and reset idle microsecond accumulators
+  uint32_t idle0 = _idleUsCore0; _idleUsCore0 = 0;
+  uint32_t idle1 = _idleUsCore1; _idleUsCore1 = 0;
 
-  uint8_t load0 = 100 - min(100U, idle0 / 10000);
-  uint8_t load1 = 100 - min(100U, idle1 / 10000);
+  if (_cpuLoadWarmup > 0) {
+    _cpuLoadWarmup--;
+    return;
+  }
 
-  _cpuLoadCore0 = (_cpuLoadCore0 * 7 + load0 * 3) / 10;
-  _cpuLoadCore1 = (_cpuLoadCore1 * 7 + load1 * 3) / 10;
+  // If idle >= 1s the core is fully idle (0% load); clamp to avoid underflow
+  uint8_t raw0 = (idle0 >= 1000000) ? 0 : (uint8_t)(100 - idle0 / 10000);
+  uint8_t raw1 = (idle1 >= 1000000) ? 0 : (uint8_t)(100 - idle1 / 10000);
+
+  // EMA smoothing: 25% new + 75% old  (+ 2 for rounding)
+  _cpuLoadCore0 = (_cpuLoadCore0 * 3 + raw0 + 2) / 4;
+  _cpuLoadCore1 = (_cpuLoadCore1 * 3 + raw1 + 2) / 4;
 }
 
 void onNtpSync() {
@@ -623,6 +636,66 @@ void setup() {
                     config.getMqttUser(), config.getMqttPassword());
   Log.setMqttClient(mqttHandler.getClient(), (proj.mqttPrefix + "/log").c_str());
 
+  // CAN bus
+  if (canBus.begin()) {
+    // Publish thermostat state on CAN every 2 seconds
+    static Task tCanPublish(2000, TASK_FOREVER, []() {
+        uint8_t mode = static_cast<uint8_t>(thermostat.getMode());
+        int16_t heatSP = (int16_t)(thermostat.getHeatSetpoint() * 10);
+        int16_t coolSP = (int16_t)(thermostat.getCoolSetpoint() * 10);
+        uint8_t flags = 0;
+        if (thermostat.isForceFurnace()) flags |= 0x01;
+        if (thermostat.isForceNoHP())    flags |= 0x02;
+        if (thermostat.isDefrostActive()) flags |= 0x04;
+        canBus.sendThermoState(mode, heatSP, coolSP, flags);
+
+        int16_t temp = thermostat.hasValidTemperature()
+            ? (int16_t)(thermostat.getCurrentTemperature() * 10) : -9999;
+        int16_t p1 = (hx710_1.isValid()) ? (int16_t)(hx710_1.getLastValue() * 100) : -9999;
+        int16_t p2 = (hx710_2.isValid()) ? (int16_t)(hx710_2.getLastValue() * 100) : -9999;
+        canBus.sendSensors(temp, p1, p2);
+    }, &ts, true);
+
+    // Handle incoming CAN messages
+    canBus.onReceive([](uint32_t id, const uint8_t* data, uint8_t len) {
+        switch (id) {
+            case CAN_ID_DISPLAY_SETPOINT: {
+                // [0-1] heat SP x10, [2-3] cool SP x10
+                if (len >= 4) {
+                    float heat = (int16_t)((data[0] << 8) | data[1]) / 10.0f;
+                    float cool = (int16_t)((data[2] << 8) | data[3]) / 10.0f;
+                    thermostat.setHeatSetpoint(heat);
+                    thermostat.setCoolSetpoint(cool);
+                    Log.info("CAN", "Display setpoint: heat=%.1f cool=%.1f", heat, cool);
+                }
+                break;
+            }
+            case CAN_ID_DISPLAY_MODE: {
+                // [0] mode
+                if (len >= 1) {
+                    thermostat.setMode(static_cast<ThermostatMode>(data[0]));
+                    Log.info("CAN", "Display mode: %d", data[0]);
+                }
+                break;
+            }
+            case CAN_ID_HP_STATE: {
+                Log.debug("CAN", "HP state: %02X %02X %02X %02X",
+                          len > 0 ? data[0] : 0, len > 1 ? data[1] : 0,
+                          len > 2 ? data[2] : 0, len > 3 ? data[3] : 0);
+                break;
+            }
+            case CAN_ID_HEARTBEAT: {
+                if (len >= 1) {
+                    Log.debug("CAN", "Heartbeat from node 0x%02X", data[0]);
+                }
+                break;
+            }
+        }
+    });
+  } else {
+    Log.warn("CAN", "CAN bus init failed — running without CAN");
+  }
+
   // Start FTP at boot (always on)
   _ftpActivePassword = proj.ftpPassword.length() > 0 ? proj.ftpPassword : "admin";
   ftpSrv.begin("admin", _ftpActivePassword.c_str());
@@ -663,5 +736,6 @@ void loop() {
                            config.getKey(), config.getKeyLen());
   }
 
-  ts.execute();
+  bool idle = ts.execute();
+  if (idle) vTaskDelay(1);   // Yield to idle task when no scheduler work pending
 }

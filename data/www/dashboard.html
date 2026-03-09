@@ -100,6 +100,7 @@ h1{color:var(--text);}
 
 <div class='card'>
 <h3>System</h3>
+<div class='row'><span class='lbl'>CPU Temp</span><span class='val' id='cpuTemp'>--</span></div>
 <div class='row'><span class='lbl'>Uptime</span><span class='val' id='uptime'>--</span></div>
 <div class='row'><span class='lbl'>WiFi IP</span><span class='val' id='wifiIP'>--</span></div>
 <div class='row'><span class='lbl'>Build</span><span class='val' id='build'>--</span></div>
@@ -129,6 +130,7 @@ function load(){
       document.getElementById('forceFurnace').checked=d.force_furnace;
       document.getElementById('p1').textContent=d.pressure1!==undefined?d.pressure1:'--';
       document.getElementById('p2').textContent=d.pressure2!==undefined?d.pressure2:'--';
+      document.getElementById('cpuTemp').textContent=d.cpu_temp_f?d.cpu_temp_f+' F':'--';
       document.getElementById('uptime').textContent=fmtUptime(d.uptime);
       document.getElementById('wifiIP').textContent=d.wifi_ip;
       document.getElementById('build').textContent=d.build;
