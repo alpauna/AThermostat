@@ -16,6 +16,7 @@ uint8_t OutPin::percent_to_byte_float(float percent) {
 }
 
 void OutPin::turnOnPercent(float percent){
+  if (_override) return;
   float origPercent = _percentOn;
   _percentOn = percent;
   _transitioning = true;
@@ -186,6 +187,7 @@ void OutPin::initPin(){
 }
 
 void OutPin::turnOff(){
+  if (_override) return;
   float origPercent = _percentOn;
   _percentOn = 0.0;
   _transitioning = true;
@@ -203,6 +205,7 @@ void OutPin::turnOff(){
 }
 
 void OutPin::turnOn(){
+  if (_override) return;
   float origPercent = _percentOn;
   _percentOn = 100.0;
   _transitioning = true;
@@ -223,6 +226,7 @@ void OutPin::turnOn(){
 }
 
 void OutPin::turnOn(float percent){
+  if (_override) return;
   float origPercent = _percentOn;
   _percentOn = percent;
   _transitioning = true;
@@ -256,5 +260,33 @@ void OutPin::runtimeCallback(){
   bool shouldContinue = _runtimeClbk(this, onDuration);
   if(!shouldContinue){
     _tskRuntime->disable();
+  }
+}
+
+void OutPin::setOverride(bool on, bool state, uint32_t durationMs) {
+  _override = on;
+  _overrideState = state;
+  if (on) {
+    _overrideEndTime = millis() + durationMs;
+    // Force the hardware state
+    if (_overrideState) {
+        digitalWrite(_pin, _inverse ? LOW : HIGH);
+    } else {
+        digitalWrite(_pin, _inverse ? HIGH : LOW);
+    }
+  } else {
+    _overrideEndTime = 0;
+    // Revert to software state
+    turnOnPercent(_percentOn);
+  }
+}
+
+bool OutPin::isOverride() { return _override; }
+bool OutPin::getOverrideState() { return _overrideState; }
+
+void OutPin::checkOverride() {
+  if (_override && millis() > _overrideEndTime) {
+    Log.info("OutPin", "%s: Override timeout, returning to normal operation", _name.c_str());
+    setOverride(false, false);
   }
 }

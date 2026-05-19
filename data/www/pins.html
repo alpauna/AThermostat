@@ -44,8 +44,8 @@ td{color:var(--text);}
 <div class='card'>
 <h3>Outputs (Relays)</h3>
 <table>
-<tr><th>Name</th><th>GPIO</th><th>State</th></tr>
-<tbody id='outTable'><tr><td colspan='3'>Loading...</td></tr></tbody>
+<tr><th>Name</th><th>GPIO</th><th>State</th><th>Action</th></tr>
+<tbody id='outTable'><tr><td colspan='4'>Loading...</td></tr></tbody>
 </table>
 </div>
 <div class='card'>
@@ -110,6 +110,12 @@ Scripts: <code>burn-vdd-power</code> (GPIO45 + power), <code>burn-usb</code> (GP
 <div id='footer' class='footer'></div>
 </div>
 <script>
+function setOverride(name, override, active){
+  var xhr=new XMLHttpRequest();
+  xhr.open('POST','/api/pin/override',true);
+  xhr.send(JSON.stringify({name:name,override:override,active:active}));
+  setTimeout(load, 500); // Quick refresh
+}
 function toggleAdv(on){
   document.getElementById('advSection').className=on?'adv-section show':'adv-section';
   localStorage.setItem('pins-adv',on?'1':'0');
@@ -126,10 +132,11 @@ function load(){
         if(d.outputs){
           for(var i=0;i<d.outputs.length;i++){
             var o=d.outputs[i];
-            oHtml+="<tr><td>"+o.name+"</td><td>"+o.boardPin+"</td><td class='"+(o.on?'on':'off')+"'>"+(o.on?'ON':'OFF')+"</td></tr>";
+            oHtml+="<tr><td>"+o.name+"</td><td>"+o.boardPin+"</td><td class='"+(o.on?'on':'off')+"'>"+(o.on?'ON':'OFF')+"</td><td>"+
+                (o.override?"<button onclick=\"setOverride('"+o.name+"',false,false)\">Clear</button>":"<button onclick=\"setOverride('"+o.name+"',true,true)\">ON</button> <button onclick=\"setOverride('"+o.name+"',true,false)\">OFF</button>")+"</td></tr>";
           }
         }
-        document.getElementById('outTable').innerHTML=oHtml||'<tr><td colspan="3">No outputs</td></tr>';
+        document.getElementById('outTable').innerHTML=oHtml||'<tr><td colspan="4">No outputs</td></tr>';
         var iHtml='';
         if(d.inputs){
           for(var i=0;i<d.inputs.length;i++){

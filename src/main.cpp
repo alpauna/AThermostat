@@ -255,7 +255,7 @@ void startAPMode() {
   }
   if (!_apModeActive) {
     WiFi.disconnect(true);
-    WiFi.mode(WIFI_AP_STA);
+    WiFi.mode(WIFI_AP);
     WiFi.softAP(apSSID.c_str(), _apPassword.c_str());
     _dnsServer.start(53, "*", WiFi.softAPIP());
     _apModeActive = true;
@@ -267,11 +267,6 @@ void startAPMode() {
     tAPReconnect.setInterval(30 * (unsigned long)TASK_SECOND);
     tAPReconnect.enableDelayed();
   }
-
-  if (_WIFI_SSID.length() > 0 && !WiFi.isConnected()) {
-    Log.info("WiFi", "Starting STA connection to '%s'", _WIFI_SSID.c_str());
-    WiFi.begin(_WIFI_SSID.c_str(), _WIFI_PASSWORD.c_str());
-  }
 }
 
 String startAPModeTest() {
@@ -281,7 +276,7 @@ String startAPModeTest() {
   } else if (_apPassword.length() == 0) {
     _apPassword = Config::generateRandomPassword();
   }
-  WiFi.mode(WIFI_AP_STA);
+  WiFi.mode(WIFI_AP);
   WiFi.softAP(apSSID.c_str(), _apPassword.c_str());
   _apModeActive = true;
   return _apPassword;
@@ -302,6 +297,7 @@ void onAPReconnect() {
     _wifiDisconnectCount = 0;
     return;
   }
+  if (_apModeActive) return;
   if (_WIFI_SSID.length() > 0) {
     Log.info("WiFi", "AP mode STA reconnect attempt to '%s'", _WIFI_SSID.c_str());
     WiFi.begin(_WIFI_SSID.c_str(), _WIFI_PASSWORD.c_str());
@@ -377,6 +373,15 @@ void onSaveThermostatState() {
 void onReadPressure() {
   hx710_1.readCalibrated();
   hx710_2.readCalibrated();
+  
+  outFan1.checkOverride();
+  outRev.checkOverride();
+  outFurnCoolLow.checkOverride();
+  outFurnCoolHigh.checkOverride();
+  outW1.checkOverride();
+  outW2.checkOverride();
+  outComp1.checkOverride();
+  outComp2.checkOverride();
 }
 
 void onPublishMqttState() {

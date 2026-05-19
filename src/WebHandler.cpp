@@ -512,6 +512,7 @@ void WebHandler::setupRoutes() {
             o["boardPin"] = outBoardPins[i];
             OutPin* p = _thermostat->getOutput((OutputIdx)i);
             o["on"] = p ? p->isPinOn() : false;
+            o["override"] = p ? p->isOverride() : false;
         }
 
         static const char* inNames[] = {"out_temp_ok","defrost_mode"};
@@ -859,4 +860,35 @@ void WebHandler::setupRoutes() {
         }
     });
     _server.addHandler(ftpPostHandler);
+    
+    // --- Override Pin ---
+    _server.on("/api/pin/override", HTTP_POST, [](AsyncWebServerRequest *request) {
+    }, nullptr, [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+        if (!checkAuth(request)) return;
+        if (index + len != total) return;
+        JsonDocument doc;
+        if (deserializeJson(doc, data, len)) { request->send(400); return; }
+        
+        const char* name = doc["name"];
+        bool active = doc["active"];
+        bool override = doc["override"];
+
+        if (!name) { request->send(400, "application/json", "{\"error\":\"missing name\"}"); return; }
+
+        bool found = false;
+        for (int i = 0; i < OUT_COUNT; i++) {
+            OutPin* p = _thermostat->getOutput((OutputIdx)i);
+            if (p && p->getName() == name) {
+                p->setOverride(override, active);
+                found = true;
+                break;
+            }
+        }
+        
+        if (found) {
+            request->send(200, "application/json", "{\"ok\":true}");
+        } else {
+            request->send(404, "application/json", "{\"error\":\"pin not found\"}");
+        }
+    });
 }

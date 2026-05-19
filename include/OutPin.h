@@ -31,6 +31,9 @@ class OutPin
     uint32_t _runtimeInterval = 1000;
     bool _transitioning = false;
     bool _lastPwmHigh = false;
+    bool _override = false;
+    bool _overrideState = false;
+    unsigned long _overrideEndTime = 0;
   protected:
     uint8_t percent_to_byte_float(float percent);
     void turnOnPercent(float percent);
@@ -61,6 +64,10 @@ class OutPin
     void turnOn(float percent);
     void setRuntimeCallback(RuntimeCallback clbk, uint32_t intervalMs = 1000);
     void runtimeCallback();
+    void setOverride(bool on, bool state, uint32_t durationMs = 30 * 60 * 1000);
+    bool isOverride();
+    bool getOverrideState();
+    void checkOverride();
 };
 
 #endif
